@@ -24,6 +24,11 @@ const char *TAG = "main.c";
 // FatFS includes
 #include "ff.h"
 
+// Task Routines
+void sdcard_task(void);
+// Task Handles
+TaskHandle_t xSDwriter_handle = NULL;
+
 void app_main(void)
 {
   printf("Hello world!\n");
@@ -42,6 +47,25 @@ void app_main(void)
   printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
     (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
+  // Creating seperate task with larger stack to handle FatFS
+  if(xSDwriter_handle == NULL){
+    BaseType_t xReturned;
+    xReturned = xTaskCreate(
+      sdcard_task,
+      "SD Card",
+      4 * 1024, // Stack size in words not bytes
+      NULL,
+      tskIDLE_PRIORITY + 1,
+      &xSDwriter_handle );
+    if( xReturned == pdPASS){
+      vTaskDelay( pdMS_TO_TICKS( 5000 ) );
+    } else {
+      ESP_LOGE(TAG, "Failed to create SD card task, error code: %i", xReturned);
+    }
+  }
+}
+
+void sdcard_task(void) {
   // Begin Card testing
   ESP_LOGI(TAG, "Initializing SD card");
 
@@ -115,4 +139,10 @@ void app_main(void)
   printf("Restarting now.\n");
   fflush(stdout);
   esp_restart();
+
+  // We should never get here
+  // This is a non thread/priority safe single task management
+  vTaskDelay( pdMS_TO_TICKS( 1000 ) );
+  xSDwriter_handle = NULL;
+  vTaskDelete( NULL );  // Deleting Self 
 }
