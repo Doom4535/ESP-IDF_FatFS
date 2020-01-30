@@ -70,6 +70,36 @@ void app_main(void)
   if( esp_ret == ESP_OK ) { ESP_LOGV(TAG, "Successfully initialized SDMMC card"); }
   else { ESP_LOGE(TAG, "Failed to initialize SDMMC card, error code: %s", esp_err_to_name(esp_ret)); }
 
+  // FatFS Configuration
+  FATFS   filesystem;
+  FIL     file;
+  FRESULT fat_ret;              // Status feedback
+  UINT    byteswritten;
+  BYTE    workspace[FF_MAX_SS]; // Working area, used by f_mkfs
+  #define CLUSTERSIZE 128 * 512 // Size of filesystem clusters/allocation size
+  fat_ret = f_mkfs("1:", 0, CLUSTERSIZE, workspace, sizeof(workspace));
+  if( fat_ret == FR_OK ) { ESP_LOGV(TAG, "Successfully created FatFS filesystem"); }
+  else { ESP_LOGE(TAG, "Failed to create FatFS filesystem, error code: %i", fat_ret); }
+  fat_ret = f_mount(&filesystem, "1:", 1);
+  if( fat_ret == FR_OK ) { ESP_LOGV(TAG, "Successfully mounted FatFS filesystem"); }
+  else { ESP_LOGE(TAG, "Failed to mount FatFS filesystem, error code: %i", fat_ret); }
+  fat_ret = f_open(&file, "1:TEST.txt", FA_OPEN_APPEND | FA_WRITE | FA_READ);
+  if( fat_ret == FR_OK ) { ESP_LOGV(TAG, "Successfully accessed FatFS files"); }
+  else { ESP_LOGE(TAG, "Failed to access FatFS file, error code: %i", fat_ret); }
+  //f_size()
+  //f_expand()
+  //f_lseek()
+  //f_sync()
+  //f_getfree()
+  char *testData = "Testing 123\r\n";
+  fat_ret = f_write(&file, testData, sizeof(testData), &byteswritten);
+  if( fat_ret == FR_OK ) { ESP_LOGV(TAG, "Successfully wrote FatFS file"); }
+  else { ESP_LOGE(TAG, "Failed to write FatFS file, error code: %i", fat_ret); }
+  if( sizeof(testData) != byteswritten ){ ESP_LOGE(TAG, "Wrote incorrect amount"); }
+  fat_ret = f_close(&file);
+  if( fat_ret == FR_OK ) { ESP_LOGV(TAG, "Successfully closed FatFS file"); }
+  else { ESP_LOGE(TAG, "Failed to close FatFS file, error code: %i", fat_ret); }
+
   // Delaying for human interpretation
   #define delayCounter 25
   for (int i = 25; i >= 0; i--) {
