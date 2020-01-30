@@ -47,13 +47,28 @@ void app_main(void)
   printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
     (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
+
+  // Delaying for human interpretation
+  ESP_LOGW(TAG, "Preparing to start routine, adjust lines/wires now");
+  #define STARTUPDELAY 7
+  for (int i = STARTUPDELAY; i >= 0; i--) {
+    if (i == STARTUPDELAY) {
+      printf("Starting in %d seconds...", i);
+      fflush(stdout);
+    } else { 
+      printf("%i.", i);
+      fflush(stdout);
+    }
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+
   // Creating seperate task with larger stack to handle FatFS
   if(xSDwriter_handle == NULL){
     BaseType_t xReturned;
     xReturned = xTaskCreate(
       sdcard_task,
       "SD Card",
-      4 * 1024, // Stack size in words not bytes
+      16 * 1024, // Stack size in words not bytes
       NULL,
       tskIDLE_PRIORITY + 1,
       &xSDwriter_handle );
@@ -100,7 +115,7 @@ void sdcard_task( void * pvParameters ) {
   FRESULT fat_ret;              // Status feedback
   UINT    byteswritten;
   BYTE    workspace[FF_MAX_SS]; // Working area, used by f_mkfs
-  #define CLUSTERSIZE 128 * 512 // Size of filesystem clusters/allocation size
+  #define CLUSTERSIZE 4 * 512 // Size of filesystem clusters/allocation size
   fat_ret = f_mkfs("1:", 0, CLUSTERSIZE, workspace, sizeof(workspace));
   if( fat_ret == FR_OK ) { ESP_LOGV(TAG, "Successfully created FatFS filesystem"); }
   else { ESP_LOGE(TAG, "Failed to create FatFS filesystem, error code: %i", fat_ret); }
@@ -125,9 +140,9 @@ void sdcard_task( void * pvParameters ) {
   else { ESP_LOGE(TAG, "Failed to close FatFS file, error code: %i", fat_ret); }
 
   // Delaying for human interpretation
-  #define delayCounter 25
-  for (int i = 25; i >= 0; i--) {
-    if (i == delayCounter) {
+  #define SHUTDOWNDELAY 25
+  for (int i = SHUTDOWNDELAY; i >= 0; i--) {
+    if (i == SHUTDOWNDELAY) {
       printf("Restarting in %d seconds...", i);
       fflush(stdout);
     } else { 
