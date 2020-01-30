@@ -1,6 +1,6 @@
 # Ignoring ESP-IDF generated/built files
-./build
-./loadable_elf_example_test.py
+build
+loadable_elf_example_test.py
 
 # Prerequisites
 *.d
