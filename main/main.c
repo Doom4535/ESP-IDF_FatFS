@@ -25,7 +25,7 @@ const char *TAG = "main.c";
 #include "ff.h"
 
 // Task Routines
-void sdcard_task(void);
+void sdcard_task( void * pvParameters );
 // Task Handles
 TaskHandle_t xSDwriter_handle = NULL;
 
@@ -65,7 +65,7 @@ void app_main(void)
   }
 }
 
-void sdcard_task(void) {
+void sdcard_task( void * pvParameters ) {
   // Begin Card testing
   ESP_LOGI(TAG, "Initializing SD card");
 
